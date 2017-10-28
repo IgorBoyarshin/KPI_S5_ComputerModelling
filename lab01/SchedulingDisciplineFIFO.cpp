@@ -9,7 +9,16 @@ SchedulingDisciplineFIFO::SchedulingDisciplineFIFO(
     double hyperExponentialProbability2) :
     SchedulingDiscipline(
             lambda, mu1, mu2, mu3,
-            hyperExponentialProbability1, hyperExponentialProbability2) {}
+            hyperExponentialProbability1, hyperExponentialProbability2) {
+        std::queue<int> q;
+        q.push(2);
+        q.push(3);
+        q.push(4);
+
+        std::cout << q.front() << std::endl;
+        q.pop();
+        std::cout << q.front() << std::endl;
+    }
 
 
 SchedulingDisciplineFIFO::~SchedulingDisciplineFIFO() {
@@ -64,7 +73,7 @@ std::vector<Task*> SchedulingDisciplineFIFO::simulate(const unsigned int TASKS_T
                     std::cout << "  Processor free => process" << std::endl
                 , LOG_LEVEL_ALL)
 
-                newTask->setSystemResponseTime(T);
+                newTask->setTimeOfSystemResponce(T);
                 m_TaskOnProcessor = newTask;
 
                 t2 = T + timeToSolve;
@@ -95,7 +104,8 @@ std::vector<Task*> SchedulingDisciplineFIFO::simulate(const unsigned int TASKS_T
                     << m_FinishedTasks.size() << ")"<< std::endl
             , LOG_LEVEL_ALL)
 
-            // update task on processor from queue
+            // update task on processor from queue.
+            // returns nullptr if there is no task available
             m_TaskOnProcessor = getTaskFromQueue();
 
             LOG(
@@ -109,8 +119,9 @@ std::vector<Task*> SchedulingDisciplineFIFO::simulate(const unsigned int TASKS_T
 
                 t2 = INF;
             } else { // got a new task to process
-                // updates the variable only if it hasn't beed set already
-                m_TaskOnProcessor->setSystemResponseTime(T);
+                // updates the variable only if it hasn't beed set already.
+                // For FIFO this is always the first setting
+                m_TaskOnProcessor->setTimeOfSystemResponce(T);
 
                 const double timeToSolve = m_TaskOnProcessor->getTimeToSolve();
                 t2 = T + timeToSolve;
