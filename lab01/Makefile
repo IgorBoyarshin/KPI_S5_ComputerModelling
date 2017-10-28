@@ -1,26 +1,20 @@
-# all: Lab1
-all: cleanExe Lab1
+mainFileName = Lab1
+files = Task SchedulingDiscipline SchedulingDisciplinePER SchedulingDisciplineFIFO
+allFiles = $(mainFileName) $(files)
+filesObj = $(addsuffix .o, $(allFiles))
+filesH = $(addsuffix .h, $(files))
+
+all: cleanExe $(mainFileName)
 
 # Execution
-Lab1: Lab1.o SchedulingDiscipline.o SchedulingDisciplinePER.o SchedulingDisciplineFIFO.o Task.o
-	g++ $(CFLAGS) -o Lab1 Lab1.o SchedulingDiscipline.o SchedulingDisciplinePER.o SchedulingDisciplineFIFO.o Task.o
+$(mainFileName): $(filesObj)
+	g++ $(CFLAGS) $^ -o $@
 
-Lab1.o: Lab1.cpp
-	g++ $(CFLAGS) -c Lab1.cpp
+# Compilation
+%.o: %.cpp $(filesH)
+	g++ -c $< $(CFLAGS)
 
-SchedulingDiscipline.o: SchedulingDiscipline.cpp
-	g++ $(CFLAGS) -c SchedulingDiscipline.cpp
-
-SchedulingDisciplinePER.o: SchedulingDisciplinePER.cpp
-	g++ $(CFLAGS) -c SchedulingDisciplinePER.cpp
-
-SchedulingDisciplineFIFO.o: SchedulingDisciplineFIFO.cpp
-	g++ $(CFLAGS) -c SchedulingDisciplineFIFO.cpp
-
-Task.o: Task.cpp
-	g++ $(CFLAGS) -c Task.cpp
-
-
+# Utils
 clean:
 	rm -f *.o Lab1
 
