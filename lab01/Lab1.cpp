@@ -6,7 +6,7 @@
 #include "SchedulingDisciplinePER.h"
 #include "SchedulingDisciplineFIFO.h"
 
-double getAverageTimeInSystem(const std::vector<Task*> tasks) {
+double getAverageTimeInSystem(const std::vector<Task*>& tasks) {
     double totalTime = 0.0;
     for (const auto& task : tasks) {
         totalTime += task->getTotalTimeInSystem();
@@ -16,7 +16,7 @@ double getAverageTimeInSystem(const std::vector<Task*> tasks) {
 }
 
 double getDispersionOfTimeInSystem(
-        const std::vector<Task*> tasks, double averageTimeInSystem) {
+        const std::vector<Task*>& tasks, double averageTimeInSystem) {
     double sum = 0.0;
     for (const auto& task : tasks) {
         const double value = task->getTotalTimeInSystem() - averageTimeInSystem;
@@ -26,7 +26,11 @@ double getDispersionOfTimeInSystem(
     return sum / (static_cast<double>(tasks.size()) - 1.0);
 }
 
-double getAverageSystemResponseTime(const std::vector<Task*> tasks) {
+double getDispersionOfTimeInSystem(const std::vector<Task*>& tasks) {
+    return getDispersionOfTimeInSystem(tasks, getAverageTimeInSystem(tasks));
+}
+
+double getAverageSystemResponseTime(const std::vector<Task*>& tasks) {
     double totalTime = 0.0;
     for (const auto& task : tasks) {
         totalTime += task->getSystemResponseTime();
@@ -75,33 +79,34 @@ double findBestQuanta(
     }
 
 
-    std::map<double, double> hist;
-    unsigned int i = 0;
-    for (double q = QUANTA_LOWER_BOUND; q <= QUANTA_HIGHER_BOUND; q += QUANTA_STEP) {
-        hist[q] = stats[i++];
-    }
+    // std::map<double, double> hist;
+    // unsigned int i = 0;
+    // for (double q = QUANTA_LOWER_BOUND; q <= QUANTA_HIGHER_BOUND; q += QUANTA_STEP) {
+    //     hist[q] = stats[i++];
+    // }
     // for (int n = 0; n < 10000; ++n) {
     //     ++hist[std::floor(dist(e2))];
     // }
 
-    for (auto p : hist) {
-        std::cout << std::fixed << std::setprecision(1) << std::setw(4)
-                  << p.first << ' ' << std::string(p.second*10, '*') << '\n';
-    }
+    // for (auto p : hist) {
+    //     std::cout << std::fixed << std::setprecision(1) << std::setw(4)
+    //               << p.first << ' ' << std::string(static_cast<unsigned int>(p.second*10), '*') << '\n';
+    // }
 
     // Now find max index
     unsigned int index = 0;
-    unsigned int indexMax = 0;
+    unsigned int indexOfMax = 0;
     double currentMax = stats[0];
     for (double value : stats) {
         if (value > currentMax) {
             currentMax = value;
-            indexMax = index;
+            indexOfMax = index;
         }
         index++;
     }
     const double BEST_QUANTA =
-        QUANTA_LOWER_BOUND + QUANTA_STEP * indexMax;
+        QUANTA_LOWER_BOUND + QUANTA_STEP * indexOfMax;
+
     return BEST_QUANTA;
 }
 
@@ -116,7 +121,16 @@ int main() {
     const double HYPER_EXPONENTIAL_PROBABILITY_1 = 0.5;
     const double HYPER_EXPONENTIAL_PROBABILITY_2 = 0.3;
     const double QUANTA = 0.9;
-    const unsigned int TASKS_TO_SIMULATE = 10000;
+    const unsigned int TASKS_TO_SIMULATE = 1000;
+
+
+    // SchedulingDisciplinePER sd(
+    //         LAMBDA, MU1, MU2, MU3,
+    //         HYPER_EXPONENTIAL_PROBABILITY_1,
+    //         HYPER_EXPONENTIAL_PROBABILITY_2,
+    //         QUANTA);
+
+    // return 0;
 
     {
         std::cout << "      PER:" << std::endl;
@@ -131,8 +145,7 @@ int main() {
         std::cout << "Average time in system = "
             << getAverageTimeInSystem(finishedTasks) << std::endl;
         std::cout << "Dispersion of time in system = "
-            << getDispersionOfTimeInSystem(finishedTasks,
-                    getAverageTimeInSystem(finishedTasks)) << std::endl;
+            << getDispersionOfTimeInSystem(finishedTasks) << std::endl;
         std::cout << "Average system response time = "
             << getAverageSystemResponseTime(finishedTasks) << std::endl;
 
@@ -153,8 +166,7 @@ int main() {
         std::cout << "Average time in system = "
             << getAverageTimeInSystem(finishedTasks) << std::endl;
         std::cout << "Dispersion of time in system = "
-            << getDispersionOfTimeInSystem(finishedTasks,
-                    getAverageTimeInSystem(finishedTasks)) << std::endl;
+            << getDispersionOfTimeInSystem(finishedTasks) << std::endl;
         std::cout << "Average system response time = "
             << getAverageSystemResponseTime(finishedTasks) << std::endl;
 
@@ -163,11 +175,11 @@ int main() {
 
     std::cout << "|------------------------------------" << std::endl;
 
-    std::cout << "Best:" << findBestQuanta(LAMBDA, MU1, MU2, MU3,
-            HYPER_EXPONENTIAL_PROBABILITY_1,
-            HYPER_EXPONENTIAL_PROBABILITY_2,
-            TASKS_TO_SIMULATE,
-            -7.0, -1.0, 0.0) << std::endl;
+    // std::cout << "Best:" << findBestQuanta(LAMBDA, MU1, MU2, MU3,
+    //         HYPER_EXPONENTIAL_PROBABILITY_1,
+    //         HYPER_EXPONENTIAL_PROBABILITY_2,
+    //         TASKS_TO_SIMULATE,
+    //         -7.0, -1.0, 0.0) << std::endl;
 
     return 0;
 }

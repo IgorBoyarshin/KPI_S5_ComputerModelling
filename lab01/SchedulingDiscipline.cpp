@@ -1,10 +1,13 @@
 #include "SchedulingDiscipline.h"
+#include <iomanip>
 #include <cstdlib> // rand
 #include "math.h" // log
 #include <iostream>
+#include <map>
 #include <random>
 
 
+// TODO: most probably don't need to initialize m_FinishedTasks
 SchedulingDiscipline::SchedulingDiscipline(
     double lambda, double mu1, double mu2, double mu3,
     double hyperExponentialProbability1,
@@ -12,11 +15,25 @@ SchedulingDiscipline::SchedulingDiscipline(
     m_LAMBDA(lambda), m_MU1(mu1), m_MU2(mu2), m_MU3(mu3),
     m_HyperExponentialProbability1(hyperExponentialProbability1),
     m_HyperExponentialProbability2(hyperExponentialProbability2),
-    m_TaskOnProcessor(nullptr) {
+    m_FinishedTasks(std::vector<Task*>()), m_TaskOnProcessor(nullptr) {
 
         // for (int i=0; i<20;i++){
         //     std::cout << generateUniformRandom() << std::endl;
         // }
+
+    // std::map<int, int> hist;
+    // for (int i = 0; i < 100; i++) {
+    //     const double v = generateUniformRandom();
+    //     hist[std::floor(v*10)]++;
+    // }
+    //
+    // for (auto p : hist) {
+    //     std::cout << std::fixed << std::setprecision(3) << std::setw(4)
+    //               << p.first << ' '
+    //               << std::string(static_cast<unsigned int>(p.second), '*')
+    //               << '\n';
+    // }
+
 }
 
 
@@ -64,9 +81,7 @@ double SchedulingDiscipline::generateHyperExponential() const {
 double SchedulingDiscipline::generateUniformRandom() const {
     static std::random_device rd;
     static std::mt19937 e2(rd());
-    static std::uniform_real_distribution<> dist(0, 1);
+    static std::uniform_real_distribution<double> dist(0.0, 1.0);
 
     return dist(e2);
-    // return static_cast <double> (rand()) /
-    //     (static_cast <double> (RAND_MAX) + 1.0);
 }

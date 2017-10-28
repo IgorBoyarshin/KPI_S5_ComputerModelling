@@ -73,9 +73,11 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
                     std::cout << "  Processor free => process" << std::endl
                 , LOG_LEVEL_ALL)
 
-                newTask->setSystemResponseTime(T);
+                newTask->setTimeOfSystemResponce(T);
                 m_TaskOnProcessor = newTask;
 
+                // What happens first:
+                // the task finishes or the quanta expires
                 const double timeOnProcessor = min(timeToSolve, m_QUANTA);
                 t2 = T + timeOnProcessor;
 
@@ -87,6 +89,8 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
                 , LOG_LEVEL_ALL)
             }
 
+            // The task is in its place,
+            // now prepare for the next task
             t1 = T + generatePoissonTime(m_LAMBDA);
 
             LOG(
@@ -105,13 +109,13 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
             // we potentially avoid some rounding problems this way
             const bool taskFinished = m_TaskOnProcessor->process(m_QUANTA);
             if (taskFinished) {
-                m_TaskOnProcessor->setFinishTime(T);
-                m_FinishedTasks.push_back(m_TaskOnProcessor);
-
                 LOG(
                     std::cout << "  Task finished. Into finished queue("
                         << m_FinishedTasks.size() << ")"<< std::endl
                 , LOG_LEVEL_ALL)
+
+                m_TaskOnProcessor->setFinishTime(T);
+                m_FinishedTasks.push_back(m_TaskOnProcessor);
             } else {
                 LOG(
                     std::cout << "  Task stopped. Into second queue" << std::endl
@@ -121,6 +125,7 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
             }
 
             // update task on processor from queue
+            // will return nullptr is there is no task available
             m_TaskOnProcessor = getTaskFromQueue();
 
             LOG(
@@ -134,8 +139,11 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
 
                 t2 = INF;
             } else { // got a new task to process
-                // updates the variable only if it hasn't beed set already
-                m_TaskOnProcessor->setSystemResponseTime(T);
+                // will update the timeOfSystemResponce only if it
+                // hasn't beed set already.
+                // It may have been set before if the getTaskFromQueue just
+                // retrieved the next task from the secondary queue.
+                m_TaskOnProcessor->setTimeOfSystemResponce(T);
 
                 const double timeOnProcessor =
                     min(m_TaskOnProcessor->getTimeLeftToSolve(), m_QUANTA);
@@ -159,7 +167,6 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
 }
 
 Task* SchedulingDisciplinePER::getTaskFromQueue() {
-
     Task* nextTask = nullptr;
 
     if (m_QueueMain.size() > 0) {

@@ -2,7 +2,7 @@
 
 
 Task::Task(double startTime, double timeToSolve) :
-    m_StartTime(startTime), m_SystemResponseTime(-1.0),
+    m_StartTime(startTime), m_TimeOfSystemResponce(-1.0),
     m_TimeToSolve(timeToSolve), m_TimeLeftToSolve(timeToSolve),
     m_FinishTime(-1.0) {}
 
@@ -18,7 +18,7 @@ double Task::getTimeLeftToSolve() const {
 
 bool Task::process(double time) {
     m_TimeLeftToSolve -= time;
-    if (m_TimeLeftToSolve < 0.0) {
+    if (m_TimeLeftToSolve <= 0.0) {
         m_TimeLeftToSolve = 0.0;
         return true;
     }
@@ -38,15 +38,15 @@ void Task::setFinishTime(double finishTime) {
 }
 
 
-void Task::setSystemResponseTime(double time) {
-    if (m_SystemResponseTime < 0.0) {
-        m_SystemResponseTime = time;
+void Task::setTimeOfSystemResponce(double time) {
+    if (m_TimeOfSystemResponce < 0.0) {
+        m_TimeOfSystemResponce = time;
     }
 }
 
 
 double Task::getSystemResponseTime() const {
-    return m_SystemResponseTime - m_StartTime;
+    return m_TimeOfSystemResponce - m_StartTime;
 }
 
 

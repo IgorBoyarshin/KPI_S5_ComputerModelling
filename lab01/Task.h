@@ -1,14 +1,13 @@
 #ifndef TASK_H
 #define TASK_H
 
-
 class Task {
     public:
         Task(double startTime, double timeToSolve);
 
     private:
         const double m_StartTime;
-        double m_SystemResponseTime; // first time it got processed
+        double m_TimeOfSystemResponce; // first time it got processed
         const double m_TimeToSolve; // time required to solve it
         double m_TimeLeftToSolve;
         double m_FinishTime;
@@ -28,7 +27,7 @@ class Task {
 
         // absolute time
         // updates the variable only if it hasn't beed set already
-        void setSystemResponseTime(double time);
+        void setTimeOfSystemResponce(double time);
 
         // delta time
         double getSystemResponseTime() const;
