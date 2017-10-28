@@ -15,26 +15,7 @@ SchedulingDiscipline::SchedulingDiscipline(
     m_LAMBDA(lambda), m_MU1(mu1), m_MU2(mu2), m_MU3(mu3),
     m_HyperExponentialProbability1(hyperExponentialProbability1),
     m_HyperExponentialProbability2(hyperExponentialProbability2),
-    m_FinishedTasks(std::vector<Task*>()), m_TaskOnProcessor(nullptr) {
-
-        // for (int i=0; i<20;i++){
-        //     std::cout << generateUniformRandom() << std::endl;
-        // }
-
-    // std::map<int, int> hist;
-    // for (int i = 0; i < 100; i++) {
-    //     const double v = generateUniformRandom();
-    //     hist[std::floor(v*10)]++;
-    // }
-    //
-    // for (auto p : hist) {
-    //     std::cout << std::fixed << std::setprecision(3) << std::setw(4)
-    //               << p.first << ' '
-    //               << std::string(static_cast<unsigned int>(p.second), '*')
-    //               << '\n';
-    // }
-
-}
+    m_FinishedTasks(std::vector<Task*>()), m_TaskOnProcessor(nullptr) {}
 
 
 SchedulingDiscipline::~SchedulingDiscipline() {
@@ -42,8 +23,6 @@ SchedulingDiscipline::~SchedulingDiscipline() {
         delete m_TaskOnProcessor;
     }
 }
-
-
 
 
 bool SchedulingDiscipline::isProcessorBusy() const {

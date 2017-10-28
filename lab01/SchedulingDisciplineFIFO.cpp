@@ -9,16 +9,7 @@ SchedulingDisciplineFIFO::SchedulingDisciplineFIFO(
     double hyperExponentialProbability2) :
     SchedulingDiscipline(
             lambda, mu1, mu2, mu3,
-            hyperExponentialProbability1, hyperExponentialProbability2) {
-        std::queue<int> q;
-        q.push(2);
-        q.push(3);
-        q.push(4);
-
-        std::cout << q.front() << std::endl;
-        q.pop();
-        std::cout << q.front() << std::endl;
-    }
+            hyperExponentialProbability1, hyperExponentialProbability2) {}
 
 
 SchedulingDisciplineFIFO::~SchedulingDisciplineFIFO() {
