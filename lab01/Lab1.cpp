@@ -2,7 +2,6 @@
 #include <vector>
 #include <map>
 #include <iomanip>
-// #include <ctime> // time() for srand
 #include "SchedulingDisciplinePER.h"
 #include "SchedulingDisciplineFIFO.h"
 
@@ -56,7 +55,6 @@ double findBestQuanta(
     const double QUANTA_LOWER_BOUND = 0.1;
     const double QUANTA_HIGHER_BOUND = 10.0;
     std::vector<double> stats;
-    // std::vector<double> stats_tmp;
 
     for (double quanta = QUANTA_LOWER_BOUND; quanta <= QUANTA_HIGHER_BOUND; quanta += QUANTA_STEP) {
         double averageTimeInSystem = 0.0;
@@ -90,14 +88,13 @@ double findBestQuanta(
             coeff1 * averageTimeInSystem +
             coeff2 * dispersionOfTimeInSystem +
             coeff3 * averageSystemResponseTime);
-        // stats_tmp.push_back(dispersionOfTimeInSystem);
     }
 
 
     // std::map<double, double> hist;
     // unsigned int i = 0;
     // for (double q = QUANTA_LOWER_BOUND; q <= QUANTA_HIGHER_BOUND; q += QUANTA_STEP) {
-    //     hist[q] = stats_tmp[i++];
+    //     hist[q] = stats[i++];
     // }
     //
     // for (auto p : hist) {
@@ -111,10 +108,7 @@ double findBestQuanta(
     unsigned int index = 0;
     unsigned int indexOfMax = 0;
     double currentMax = stats[0];
-    // double currentMax = -1.0*stats_tmp[0];
-    // for (double value : stats_tmp) {
     for (double value : stats) {
-        // value *= -1.0;
         if (value > currentMax) {
             currentMax = value;
             indexOfMax = index;
@@ -129,14 +123,13 @@ double findBestQuanta(
 
 int main() {
     std::cout << "|------------------------------------" << std::endl;
-    // srand (static_cast <unsigned> (time(0)));
 
-    const double LAMBDA = 1.5;
-    const double MU1 = 2.0;
+    const double LAMBDA = 0.5;
+    const double MU1 = 20.0;
     const double MU2 = 2.0;
-    const double MU3 = 2.0;
-    const double HYPER_EXPONENTIAL_PROBABILITY_1 = 0.5;
-    const double HYPER_EXPONENTIAL_PROBABILITY_2 = 0.3;
+    const double MU3 = 0.1 / 0.059;
+    const double HYPER_EXPONENTIAL_PROBABILITY_1 = 0.001;
+    const double HYPER_EXPONENTIAL_PROBABILITY_2 = 0.94;
     const double QUANTA = 0.9;
     const unsigned int TASKS_TO_SIMULATE = 7000;
 
@@ -221,11 +214,11 @@ int main() {
 
     std::cout << "|------------------------------------" << std::endl;
 
-    std::cout << "Best:" << findBestQuanta(LAMBDA, MU1, MU2, MU3,
-            HYPER_EXPONENTIAL_PROBABILITY_1,
-            HYPER_EXPONENTIAL_PROBABILITY_2,
-            TASKS_TO_SIMULATE,
-            -7.0, -1.0, 0.0, REPETITIONS) << std::endl;
+    // std::cout << "Best quanta:" << findBestQuanta(LAMBDA, MU1, MU2, MU3,
+    //         HYPER_EXPONENTIAL_PROBABILITY_1,
+    //         HYPER_EXPONENTIAL_PROBABILITY_2,
+    //         TASKS_TO_SIMULATE,
+    //         -7.0, -1.0, 0.0, REPETITIONS) << std::endl;
 
     return 0;
 }

@@ -7,7 +7,7 @@
 #include <random>
 
 
-// TODO: most probably don't need to initialize m_FinishedTasks
+// TODO: probably don't need to initialize m_FinishedTasks
 SchedulingDiscipline::SchedulingDiscipline(
     double lambda, double mu1, double mu2, double mu3,
     double hyperExponentialProbability1,
@@ -49,7 +49,7 @@ double SchedulingDiscipline::generateHyperExponential() const {
     const double probability = generateUniformRandom();
     if (probability < m_HyperExponentialProbability1) {
         return generatePoissonTime(m_MU1);
-    } else if (probability < m_HyperExponentialProbability2) {
+    } else if (probability < m_HyperExponentialProbability1 + m_HyperExponentialProbability2) {
         return generatePoissonTime(m_MU2);
     } else {
         return generatePoissonTime(m_MU3);

@@ -54,7 +54,15 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
                 std::cout << "  t1 is min => task arrival" << std::endl
             , LOG_LEVEL_ALL)
 
-            const double timeToSolve = generateHyperExponential();
+            double timeToSolve;
+            // Put a different kind of task 10% of the time
+            if (simulatedTasks % 10 == 0) {
+                // timeToSolve = generatePoissonTime(0.1);
+                // timeToSolve = 0.5;
+                timeToSolve = generateHyperExponential();
+            } else {
+                timeToSolve = generateHyperExponential();
+            }
 
             LOG(
                 std::cout << "  It has " << timeToSolve << " solveTime" << std::endl
@@ -162,7 +170,7 @@ std::vector<Task*> SchedulingDisciplinePER::simulate(const unsigned int TASKS_TO
         }
     }
 
-    // std::cout << m_FinishedTasks.size() << std::endl;
+    // std::cout << "Finished: " << m_FinishedTasks.size() << std::endl;
     return m_FinishedTasks;
 }
 

@@ -126,6 +126,7 @@ std::vector<Task*> SchedulingDisciplineFIFO::simulate(const unsigned int TASKS_T
         }
     }
 
+    // std::cout << "Finished: " << m_FinishedTasks.size() << std::endl;
     return m_FinishedTasks;
 }
 
