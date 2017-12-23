@@ -3,3 +3,6 @@
 make
 
 ./main
+
+# rm -f main
+rm -f *.o

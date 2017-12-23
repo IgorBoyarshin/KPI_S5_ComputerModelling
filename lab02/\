@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iomanip>
 #include <map>
 // #include <vector>
 #include <limits> // INF
@@ -30,7 +29,7 @@ int main() {
     std::cout << "------------------ Begin ------------------" << std::endl;
 
     const unsigned int amountOfTasksInSystem = 5;
-    const unsigned int amountOfEventsToSimulate = 1000000;
+    const unsigned int amountOfEventsToSimulate = 1;
     const unsigned int amountOfCpuCores = 3;
 
     DevicesMap devicesMap;
@@ -38,14 +37,10 @@ int main() {
     initializeWithDevices(devicesMap, amountOfCpuCores);
     initializeDevicesWithTasks(devicesMap, amountOfTasksInSystem);
 
-    // for (const auto& entry : devicesMap) {
-    //     const DeviceType deviceType = entry.first;
-    //     if (deviceType == DeviceType::CPU) {
-    //         // std::cout << entry.first << ": " << *((MulticoreDevice*)entry.second) << std::endl;
-    //     } else {
-    //         std::cout << entry.first << ": " << *((SinglecoreDevice*)entry.second) << std::endl;
-    //     }
-    // }
+    for (const auto& entry : devicesMap) {
+        std::cout << "a" << std::endl;
+        std::cout << *((SinglecoreDevice*)entry.second) << std::endl;
+    }
 
     const double totalTime = simulate(devicesMap, amountOfEventsToSimulate, amountOfTasksInSystem);
     std::cout << "Load coeffs:" << std::endl;
@@ -57,14 +52,28 @@ int main() {
 
             unsigned int coreIndex = 0;
             for (const double loadCoeff : loadCoeffs) {
-                std::cout << std::setw(4) << deviceType << " core " << coreIndex++ << ": " << loadCoeff << std::endl;
+                // std::cout << deviceType << " core " << coreIndex++ << ": " << loadCoeff << std::endl;
             }
         } else {
             const SinglecoreDevice device = *((SinglecoreDevice*) entry.second);
             double loadCoeff = device.getLoadCoeff(totalTime);
 
-            std::cout << std::setw(11) << deviceType << ": " << loadCoeff << std::endl;
+            // std::cout << deviceType << ": " << loadCoeff << std::endl;
         }
+    }
+}
+
+
+// Random
+void initializeDevicesWithTasks(DevicesMap& devicesMap, unsigned int amountOfTasks) {
+    srand (time(nullptr));
+    const unsigned int amountOfDevices = devicesMap.size();
+    for (unsigned int i = 0; i < amountOfTasks; i++) {
+        std::cout << i << std::endl;
+        Device* const randomDevice = devicesMap[static_cast<DeviceType>( rand() % amountOfDevices )];
+        std::cout << (randomDevice == nullptr ? "e": "r") << std::endl;
+        randomDevice->receiveTask();
+        randomDevice->startIfCan(0.0);
     }
 }
 
@@ -79,16 +88,15 @@ double simulate(
         // Pick the device we're gonna be working with
         Device* const currentDevice =
             findDeviceWithMinFinishTime(devicesMap);
-        currentGlobalTime = currentDevice->getFinishTime();
 
         // Finish the task on it, pick a destination and send the task there
-        const DeviceType destination = currentDevice->finishTask(); // will set finishTime to INF
-        // std::cout << "Goind to " << destination << std::endl;
+        const DeviceType destination = currentDevice->finishTask();
         Device* const destinationDevice = devicesMap[destination];
         destinationDevice->receiveTask();
 
         // The change could only have influenced the source and the destination,
         // so we try to start only those two.
+        currentGlobalTime = currentDevice->getFinishTime();
         currentDevice->startIfCan(currentGlobalTime);
         destinationDevice->startIfCan(currentGlobalTime);
         // for (auto& entry : devicesMap) {
@@ -97,19 +105,6 @@ double simulate(
     }
 
     return currentGlobalTime;
-}
-
-
-// Random
-void initializeDevicesWithTasks(DevicesMap& devicesMap, unsigned int amountOfTasks) {
-    srand (time(nullptr));
-    const unsigned int amountOfDevices = devicesMap.size();
-    for (unsigned int i = 0; i < amountOfTasks; i++) {
-        const unsigned int index = rand() % amountOfDevices;
-        Device* const randomDevice = devicesMap[static_cast<DeviceType>(index)];
-        randomDevice->receiveTask();
-        randomDevice->startIfCan(0.0);
-    }
 }
 
 
@@ -132,21 +127,21 @@ Device* findDeviceWithMinFinishTime(const DevicesMap& devicesMap) {
         }
     }
 
-    // std::cout <<"FOund " << minDeviceType << " with " << minFinishTime << std::endl;
+    // std::cout << "Found " << minDeviceType << std::endl;
 
     return devicesMap.at(minDeviceType);
 }
 
 
 void initializeWithDevices(DevicesMap& devicesMap, unsigned int amountOfCpuCores) {
-    devicesMap.emplace(DeviceType::CPU, new MulticoreDevice(
-        // DeciveType::CPU,
-        2.0,
-        {
-            { DeviceType::NB, 1.0 }
-        },
-        amountOfCpuCores
-    ));
+    // devicesMap.emplace(DeviceType::CPU, new MulticoreDevice(
+    //     // DeciveType::CPU,
+    //     2.0,
+    //     {
+    //         { DeviceType::NB, 1.0 }
+    //     },
+    //     amountOfCpuCores
+    // ));
     devicesMap.emplace(DeviceType::GPU, new SinglecoreDevice(
         // DeviceType::GPU,
         1.0,

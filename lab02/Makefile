@@ -1,5 +1,5 @@
 mainFileName = main
-files = Device
+files = Device DeviceType MulticoreDevice SinglecoreDevice
 allFiles = $(mainFileName) $(files)
 filesObj = $(addsuffix .o, $(allFiles))
 filesH = $(addsuffix .h, $(files))
@@ -8,11 +8,15 @@ all: cleanExe $(mainFileName)
 
 # Execution
 $(mainFileName): $(filesObj)
-	g++ $(CFLAGS) $^ -o $@
+	g++ -O2 $^ -o $@
+
+# g++ $(CFLAGS) -O3  $^ -o $@
 
 # Compilation
 %.o: %.cpp $(filesH)
-	g++ -c $< $(CFLAGS)
+	g++ -O2 -c $<
+
+# g++ -c $< $(CFLAGS)
 
 # Utils
 clean:
