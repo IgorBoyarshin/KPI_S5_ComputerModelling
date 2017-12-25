@@ -138,11 +138,13 @@ typedef std::map<DeviceType, std::vector<std::pair<DeviceType, double> > > Devic
 typedef std::map<DeviceType, double> TauMap;
 
 
-Vector solveSystemOfLinearEquations(
-        const Matrix& A,
-        const Vector& B);
+Vector solveSystemOfLinearEquations(Matrix& A);
 
-double det(const Matrix& M);
+// Vector solveSystemOfLinearEquations(
+//         const Matrix& A,
+//         const Vector& B);
+
+// double det(const Matrix& M);
 
 
 DeviceTransitionMap initDeviceTransitionMap();
@@ -167,8 +169,9 @@ void print(const State& state) {
 }
 
 
-Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious);
-Vector constructDefaultBVector(unsigned int size);
+Matrix constructAugmentedProbabilityMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious);
+// Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious);
+// Vector constructDefaultBVector(unsigned int size);
 
 bool wasBusyInState(const State& state, const DeviceType& deviceType) {
     if (state.at(deviceType).processing > 0) {
@@ -320,12 +323,14 @@ int main() {
     //         {2.0, 1}
     //     }
     // );
-    // const Matrix A = constructProbabilitiesMatrix(er2);
+    // Matrix A = constructAugmentedProbabilityMatrix(er2);
 
-    const Matrix A = constructProbabilitiesMatrix(erreichbarkeitBaumContinious);
-    const Vector B = constructDefaultBVector(A.size());
+    // Matrix A = constructProbabilitiesMatrix(erreichbarkeitBaumContinious);
+    // Vector B = constructDefaultBVector(A.size());
+    Matrix A = constructAugmentedProbabilityMatrix(erreichbarkeitBaumContinious);
     std::cout << "Starting solving..." << std::endl;
-    const Vector P = solveSystemOfLinearEquations(A, B);
+    const Vector P = solveSystemOfLinearEquations(A);
+    // const Vector P = solveSystemOfLinearEquations(A, B);
 
     // std::cout << "Probs:" << std::endl;
     // for (double d : P) {
@@ -360,18 +365,18 @@ int main() {
 }
 
 
-Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious) {
+Matrix constructAugmentedProbabilityMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious) {
     const unsigned int N = erreichbarkeitBaumContinious.size();
 
     Matrix matrix;
     matrix.reserve(N);
-    matrix.push_back(std::vector<double>(N, 1.0)); // first equation, all = 1.0
-    for (unsigned int i = 1; i < N; i++) matrix.push_back(std::vector<double>(N, 0.0)); // all other equations, default = 0.0
+    matrix.push_back(std::vector<double>(N + 1, 1.0)); // first equation, all = 1.0
+    for (unsigned int i = 1; i < N; i++) matrix.push_back(std::vector<double>(N + 1, 0.0)); // all other equations, default = 0.0
 
     unsigned int fromIndex = 0;
     for (const auto& stateTransitions : erreichbarkeitBaumContinious) { // for each State
         for (const TransitionContinious& transition : stateTransitions) { // for each Transition from state
-            const double intensity =  transition.intensity;
+            const double intensity = transition.intensity;
             const unsigned int toIndex = transition.destinationIndex;
 
             if (fromIndex != N - 1) {
@@ -390,13 +395,43 @@ Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichb
     return matrix;
 }
 
+// Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious) {
+//     const unsigned int N = erreichbarkeitBaumContinious.size();
+//
+//     Matrix matrix;
+//     matrix.reserve(N);
+//     matrix.push_back(std::vector<double>(N, 1.0)); // first equation, all = 1.0
+//     for (unsigned int i = 1; i < N; i++) matrix.push_back(std::vector<double>(N, 0.0)); // all other equations, default = 0.0
+//
+//     unsigned int fromIndex = 0;
+//     for (const auto& stateTransitions : erreichbarkeitBaumContinious) { // for each State
+//         for (const TransitionContinious& transition : stateTransitions) { // for each Transition from state
+//             const double intensity =  transition.intensity;
+//             const unsigned int toIndex = transition.destinationIndex;
+//
+//             if (fromIndex != N - 1) {
+//                 // My equation row
+//                 matrix[fromIndex + 1][fromIndex] -= intensity; // +1 because first equation is taken
+//             }
+//             if (toIndex != N - 1) {
+//                 // Their equation row
+//                 matrix[toIndex + 1][fromIndex] += intensity; // +1 because first equation is taken
+//             }
+//         }
+//
+//         fromIndex++;
+//     }
+//
+//     return matrix;
+// }
 
-Vector constructDefaultBVector(unsigned int size) {
-    std::vector<double> B(size, 0.0);
-    B[0] = 1.0;
 
-    return B;
-}
+// Vector constructDefaultBVector(unsigned int size) {
+//     std::vector<double> B(size, 0.0);
+//     B[0] = 1.0;
+//
+//     return B;
+// }
 
 
 // The State for which this function is call must already be in StatesBank
@@ -449,71 +484,121 @@ State clone(const State& state) {
 
 
 Vector solveSystemOfLinearEquations(
-        const Matrix& A,
-        const Vector& B) {
+        Matrix& A) {
     const unsigned int N = A.size();
-    // if (true) {
-    //     return std::vector<double>(N, 1.0);
-    // }
-    Vector X;
-    X.reserve(N);
 
-    // Initialize once, reuse N times
-    Matrix matrix;
-    matrix.reserve(N);
-    for (unsigned int i = 0; i < N; i++) matrix.push_back(Vector(N, 0.0));
-
-    const double det0 = det(A);
+    // Forward
     for (unsigned int i = 0; i < N; i++) {
-        for (unsigned int row = 0; row < N; row++) {
-            for (unsigned int column = 0; column < N; column++) {
-                matrix[row][column] = (column == i) ? B[row] : A[row][column];
+        // Search for max in this column
+        double max = abs(A[i][i]);
+        unsigned int maxRow = i;
+        for (unsigned int k = i + 1; k < N; k++) {
+            if (abs(A[k][i]) > max) {
+                max = abs(A[k][i]);
+                maxRow = k;
             }
         }
 
-        X.push_back(det(matrix) / det0);
-        std::cout << "Derived " << i << "s" << std::endl;
+        // Swap max row with current row
+        for (unsigned int k = i; k < N + 1; k++) {
+            double temp = A[maxRow][k];
+            A[maxRow][k] = A[i][k];
+            A[i][k] = temp;
+        }
+
+        // Make all rows below this one 0 in current column
+        for (unsigned int k = i + 1; k < N; k++) {
+            const double c = -A[k][i] / A[i][i];
+            A[k][i] = 0.0;
+            for (unsigned int j = i + 1; j < N + 1; j++) {
+                // if (i == j) {
+                //     A[k][j] = 0.0;
+                // } else {
+                A[k][j] += c * A[i][j];
+                // }
+            }
+        }
+    }
+
+    // Backwards
+    std::vector<double> X(N, 0.0);
+    for (int i = N - 1; i >= 0; i--) {
+        X[i] = A[i][N] / A[i][i];
+        for (int k = i - 1; k >= 0; k--) {
+            A[k][N] -= A[k][i] * X[i];
+        }
     }
 
     return X;
 }
 
 
-double det(const Matrix& M) {
-    const unsigned int N = M.size();
-    if (N == 2) {
-        return (M[0][0] * M[1][1] - M[1][0] * M[0][1]);
-    }
+// Vector solveSystemOfLinearEquations(
+//         const Matrix& A,
+//         const Vector& B) {
+//     const unsigned int N = A.size();
+//     // if (true) {
+//     //     return std::vector<double>(N, 1.0);
+//     // }
+//     Vector X;
+//     X.reserve(N);
+//
+//     // Initialize once, reuse N times
+//     Matrix matrix;
+//     matrix.reserve(N);
+//     for (unsigned int i = 0; i < N; i++) matrix.push_back(Vector(N, 0.0));
+//
+//     const double det0 = det(A);
+//     for (unsigned int i = 0; i < N; i++) {
+//         for (unsigned int row = 0; row < N; row++) {
+//             for (unsigned int column = 0; column < N; column++) {
+//                 matrix[row][column] = (column == i) ? B[row] : A[row][column];
+//             }
+//         }
+//
+//         X.push_back(det(matrix) / det0);
+//         std::cout << "Derived " << i << "s" << std::endl;
+//     }
+//
+//     return X;
+// }
 
-    double determinant = 0.0;
-    int sign = +1;
-    unsigned int elemIndex = 0;
-    for (const double elem : M[0]) {
-        Matrix subMatrix;
-        subMatrix.reserve(N - 1);
 
-        for (unsigned int rowIndex = 1; rowIndex < N; rowIndex++) {
-            Vector row;
-            row.reserve(N - 1);
-
-            for (unsigned int columnIndex = 0; columnIndex < N; columnIndex++) {
-                if (columnIndex == elemIndex) {
-                    continue;
-                }
-                row.push_back(M[rowIndex][columnIndex]);
-            }
-
-            subMatrix.push_back(row);
-        }
-
-        determinant += sign * elem * det(subMatrix);
-
-        sign *= -1;
-        elemIndex++;
-    }
-
-    return determinant;
-}
+// double det(const Matrix& M) {
+//     const unsigned int N = M.size();
+//     if (N == 2) {
+//         return (M[0][0] * M[1][1] - M[1][0] * M[0][1]);
+//     }
+//
+//     double determinant = 0.0;
+//     int sign = +1;
+//     unsigned int elemIndex = 0;
+//     for (const double elem : M[0]) {
+//         Matrix subMatrix;
+//         subMatrix.reserve(N - 1);
+//
+//         for (unsigned int rowIndex = 1; rowIndex < N; rowIndex++) {
+//             Vector row;
+//             row.reserve(N - 1);
+//
+//             for (unsigned int columnIndex = 0; columnIndex < N; columnIndex++) {
+//                 if (columnIndex == elemIndex) {
+//                     continue;
+//                 }
+//                 row.push_back(M[rowIndex][columnIndex]);
+//             }
+//
+//             subMatrix.push_back(row);
+//         }
+//
+//         determinant += sign * elem * det(subMatrix);
+//
+//         sign *= -1;
+//         elemIndex++;
+//     }
+//
+//     return determinant;
+// }
 
 
 State initStartingState(unsigned int amountOfTasksInSystem, unsigned int amountOfCores) {
