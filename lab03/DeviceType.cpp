@@ -12,24 +12,24 @@ std::ostream& operator<<(std::ostream& os, DeviceType deviteType) {
         case NB:
             os << "NB";
             break;
-        // case RAM:
-        //     os << "RAM";
-        //     break;
-        // case VPU:
-        //     os << "VPU";
-        //     break;
-        // case AP:
-        //     os << "AP";
-        //     break;
-        // case SB:
-        //     os << "SB";
-        //     break;
-        // case MA:
-        //     os << "MA";
-        //     break;
-        // case DC:
-        //     os << "DC";
-        //     break;
+        case RAM:
+            os << "RAM";
+            break;
+        case VPU:
+            os << "VPU";
+            break;
+        case AP:
+            os << "AP";
+            break;
+        case SB:
+            os << "SB";
+            break;
+        case MA:
+            os << "MA";
+            break;
+        case DC:
+            os << "DC";
+            break;
         case AmountOfDeviceTypes:
             os << "*Invalid use of AmountOfDeviceTypes*";
             break;

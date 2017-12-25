@@ -167,14 +167,26 @@ void print(const State& state) {
 }
 
 
+Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious);
+Vector constructDefaultBVector(unsigned int size);
+
+bool wasBusyInState(const State& state, const DeviceType& deviceType) {
+    if (state.at(deviceType).processing > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+
 // -------------------------------- main --------------------------------------
 
 
 int main() {
-    const unsigned int amountOfTasksInSystem = 3;
-    // const unsigned int amountOfTasksInSystem = 5;
-    const unsigned int amountOfCores = 1;
-    // const unsigned int amountOfCores = 3;
+    // const unsigned int amountOfTasksInSystem = 3;
+    // const unsigned int amountOfCores = 1;
+    const unsigned int amountOfTasksInSystem = 5;
+    const unsigned int amountOfCores = 3;
 
     const DeviceTransitionMap deviceTransitionMap = initDeviceTransitionMap();
     const TauMap tauMap = initTauMap();
@@ -290,8 +302,100 @@ int main() {
     // and let's write a system of linear equations that represents that tree(Baum).
     // Our goal is to derive each P_i and generate the following map: State <-> P.
 
+    // For testing
+    // ErreichbarkeitBaumContinious er2;
+    // er2.push_back(
+    //     {
+    //         {0.5, 1}
+    //     }
+    // );
+    // er2.push_back(
+    //     {
+    //         {1.0, 2}
+    //     }
+    // );
+    // er2.push_back(
+    //     {
+    //         {3.0, 0},
+    //         {2.0, 1}
+    //     }
+    // );
+    // const Matrix A = constructProbabilitiesMatrix(er2);
+
+    const Matrix A = constructProbabilitiesMatrix(erreichbarkeitBaumContinious);
+    const Vector B = constructDefaultBVector(A.size());
+    std::cout << "Starting solving..." << std::endl;
+    const Vector P = solveSystemOfLinearEquations(A, B);
+
+    // std::cout << "Probs:" << std::endl;
+    // for (double d : P) {
+    //     std::cout << d << std::endl;
+    // }
+
+
+    // Soooo, have our probabilities of being in each State.
+    // Now we need for each device to sum those probabilities in which corresponding
+    // States the device was busy - and that will be our desired load coefficient
+    std::vector<double> loadCoeffs;
+    loadCoeffs.reserve(statesBank.size());
+    for (unsigned int deviceIndex = 0; deviceIndex < DeviceType::AmountOfDeviceTypes; deviceIndex++) {
+        const DeviceType deviceType = static_cast<DeviceType>(deviceIndex);
+        double sum = 0.0;
+        for (unsigned int stateIndex = 0; stateIndex < statesBank.size(); stateIndex++) {
+            const State& state = statesBank.get(stateIndex);
+            sum += wasBusyInState(state, deviceType) ? P[stateIndex] : 0.0;
+        }
+
+        loadCoeffs.push_back(sum);
+    }
+
+    // Print load coeffs
+    std::cout << "Load coeffs:" << std::endl;
+    for (unsigned int deviceIndex = 0; deviceIndex < DeviceType::AmountOfDeviceTypes; deviceIndex++) {
+        const DeviceType deviceType = static_cast<DeviceType>(deviceIndex);
+        std::cout << deviceType << ": " << loadCoeffs[deviceIndex] << std::endl;
+    }
 
     return 0;
+}
+
+
+Matrix constructProbabilitiesMatrix(const ErreichbarkeitBaumContinious& erreichbarkeitBaumContinious) {
+    const unsigned int N = erreichbarkeitBaumContinious.size();
+
+    Matrix matrix;
+    matrix.reserve(N);
+    matrix.push_back(std::vector<double>(N, 1.0)); // first equation, all = 1.0
+    for (unsigned int i = 1; i < N; i++) matrix.push_back(std::vector<double>(N, 0.0)); // all other equations, default = 0.0
+
+    unsigned int fromIndex = 0;
+    for (const auto& stateTransitions : erreichbarkeitBaumContinious) { // for each State
+        for (const TransitionContinious& transition : stateTransitions) { // for each Transition from state
+            const double intensity =  transition.intensity;
+            const unsigned int toIndex = transition.destinationIndex;
+
+            if (fromIndex != N - 1) {
+                // My equation row
+                matrix[fromIndex + 1][fromIndex] -= intensity; // +1 because first equation is taken
+            }
+            if (toIndex != N - 1) {
+                // Their equation row
+                matrix[toIndex + 1][fromIndex] += intensity; // +1 because first equation is taken
+            }
+        }
+
+        fromIndex++;
+    }
+
+    return matrix;
+}
+
+
+Vector constructDefaultBVector(unsigned int size) {
+    std::vector<double> B(size, 0.0);
+    B[0] = 1.0;
+
+    return B;
 }
 
 
@@ -348,6 +452,9 @@ Vector solveSystemOfLinearEquations(
         const Matrix& A,
         const Vector& B) {
     const unsigned int N = A.size();
+    // if (true) {
+    //     return std::vector<double>(N, 1.0);
+    // }
     Vector X;
     X.reserve(N);
 
@@ -365,6 +472,7 @@ Vector solveSystemOfLinearEquations(
         }
 
         X.push_back(det(matrix) / det0);
+        std::cout << "Derived " << i << "s" << std::endl;
     }
 
     return X;
@@ -419,17 +527,18 @@ State initStartingState(unsigned int amountOfTasksInSystem, unsigned int amountO
     }
 
     // Populate with tasks
-    // srand (time(nullptr));
-    // for (unsigned int i = 0; i < amountOfTasksInSystem; i++) {
-    //     const unsigned int deviceIndex = rand() % amountOfDeviceTypes;
-    //     state[deviceIndex].receiveTask();
-    //     state[deviceIndex].startIfCan();
-    // }
-    state[0].receiveTask();
-    state[0].receiveTask();
-    state[2].receiveTask();
-    state[2].startIfCan();
-    state[0].startIfCan();
+    srand (time(nullptr));
+    for (unsigned int i = 0; i < amountOfTasksInSystem; i++) {
+        const unsigned int deviceIndex = rand() % amountOfDeviceTypes;
+        state[deviceIndex].receiveTask();
+        state[deviceIndex].startIfCan();
+    }
+
+    // state[0].receiveTask();
+    // state[0].receiveTask();
+    // state[2].receiveTask();
+    // state[2].startIfCan();
+    // state[0].startIfCan();
 
     return state;
 }
@@ -438,19 +547,19 @@ State initStartingState(unsigned int amountOfTasksInSystem, unsigned int amountO
 TauMap initTauMap() {
     TauMap tauMap;
 
-    tauMap.emplace(DeviceType::CPU, 1.1);
-    tauMap.emplace(DeviceType::GPU, 2.2);
-    tauMap.emplace(DeviceType::NB, 3.3);
+    // tauMap.emplace(DeviceType::CPU, 1.1);
+    // tauMap.emplace(DeviceType::GPU, 2.2);
+    // tauMap.emplace(DeviceType::NB, 3.3);
 
-    // tauMap.emplace(DeviceType::CPU, 2.0);
-    // tauMap.emplace(DeviceType::GPU, 1.0);
-    // tauMap.emplace(DeviceType::NB, 0.5);
-    // tauMap.emplace(DeviceType::RAM, 10.0);
-    // tauMap.emplace(DeviceType::VPU, 100.0);
-    // tauMap.emplace(DeviceType::AP, 200.0);
-    // tauMap.emplace(DeviceType::SB, 2.0);
-    // tauMap.emplace(DeviceType::MA, 20.0);
-    // tauMap.emplace(DeviceType::DC, 40.0);
+    tauMap.emplace(DeviceType::CPU, 2.0);
+    tauMap.emplace(DeviceType::GPU, 1.0);
+    tauMap.emplace(DeviceType::NB, 0.5);
+    tauMap.emplace(DeviceType::RAM, 10.0);
+    tauMap.emplace(DeviceType::VPU, 100.0);
+    tauMap.emplace(DeviceType::AP, 200.0);
+    tauMap.emplace(DeviceType::SB, 2.0);
+    tauMap.emplace(DeviceType::MA, 20.0);
+    tauMap.emplace(DeviceType::DC, 40.0);
 
     return tauMap;
 }
@@ -459,77 +568,77 @@ TauMap initTauMap() {
 DeviceTransitionMap initDeviceTransitionMap() {
     DeviceTransitionMap transitionMap;
 
-    transitionMap.emplace(DeviceType::CPU,
-        std::vector<std::pair<DeviceType, double>> {
-            { DeviceType::CPU, 0.4 },
-            { DeviceType::GPU, 0.6 }
-        }
-    );
-    transitionMap.emplace(DeviceType::GPU,
-        std::vector<std::pair<DeviceType, double>> {
-            { DeviceType::NB, 0.2 },
-            { DeviceType::CPU, 0.8 }
-        }
-    );
-    transitionMap.emplace(DeviceType::NB,
-        std::vector<std::pair<DeviceType, double>> {
-            { DeviceType::GPU, 0.3 },
-            { DeviceType::NB, 0.7 }
-        }
-    );
-
     // transitionMap.emplace(DeviceType::CPU,
     //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::NB, 1.0 }
+    //         { DeviceType::CPU, 0.4 },
+    //         { DeviceType::GPU, 0.6 }
     //     }
     // );
     // transitionMap.emplace(DeviceType::GPU,
     //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::NB, 1.0 }
+    //         { DeviceType::NB, 0.2 },
+    //         { DeviceType::CPU, 0.8 }
     //     }
     // );
     // transitionMap.emplace(DeviceType::NB,
     //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::CPU, 0.5 },
-    //         { DeviceType::RAM, 0.4 },
-    //         { DeviceType::SB, 0.05 },
-    //         { DeviceType::GPU, 0.05 }
+    //         { DeviceType::GPU, 0.3 },
+    //         { DeviceType::NB, 0.7 }
     //     }
     // );
-    // transitionMap.emplace(DeviceType::RAM,
-    //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::NB, 1.0 }
-    //     }
-    // );
-    // transitionMap.emplace(DeviceType::VPU,
-    //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::CPU, 1.0 }
-    //     }
-    // );
-    // transitionMap.emplace(DeviceType::AP,
-    //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::CPU, 1.0 }
-    //     }
-    // );
-    // transitionMap.emplace(DeviceType::SB,
-    //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::NB, 0.5 },
-    //         { DeviceType::DC, 0.3 },
-    //         { DeviceType::MA, 0.1 },
-    //         { DeviceType::VPU, 0.05 },
-    //         { DeviceType::AP, 0.05 }
-    //     }
-    // );
-    // transitionMap.emplace(DeviceType::MA,
-    //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::SB, 1.0 }
-    //     }
-    // );
-    // transitionMap.emplace(DeviceType::DC,
-    //     std::vector<std::pair<DeviceType, double>> {
-    //         { DeviceType::SB, 1.0 }
-    //     }
-    // );
+
+    transitionMap.emplace(DeviceType::CPU,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::NB, 1.0 }
+        }
+    );
+    transitionMap.emplace(DeviceType::GPU,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::NB, 1.0 }
+        }
+    );
+    transitionMap.emplace(DeviceType::NB,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::CPU, 0.5 },
+            { DeviceType::RAM, 0.4 },
+            { DeviceType::SB, 0.05 },
+            { DeviceType::GPU, 0.05 }
+        }
+    );
+    transitionMap.emplace(DeviceType::RAM,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::NB, 1.0 }
+        }
+    );
+    transitionMap.emplace(DeviceType::VPU,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::CPU, 1.0 }
+        }
+    );
+    transitionMap.emplace(DeviceType::AP,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::CPU, 1.0 }
+        }
+    );
+    transitionMap.emplace(DeviceType::SB,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::NB, 0.5 },
+            { DeviceType::DC, 0.3 },
+            { DeviceType::MA, 0.1 },
+            { DeviceType::VPU, 0.05 },
+            { DeviceType::AP, 0.05 }
+        }
+    );
+    transitionMap.emplace(DeviceType::MA,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::SB, 1.0 }
+        }
+    );
+    transitionMap.emplace(DeviceType::DC,
+        std::vector<std::pair<DeviceType, double>> {
+            { DeviceType::SB, 1.0 }
+        }
+    );
 
     return transitionMap;
 }

@@ -6,8 +6,8 @@
 
 enum DeviceType {
     CPU,
-    GPU, NB,// RAM,
-    // VPU, AP, SB, MA, DC,
+    GPU, NB, RAM,
+    VPU, AP, SB, MA, DC,
     AmountOfDeviceTypes
 };
 
